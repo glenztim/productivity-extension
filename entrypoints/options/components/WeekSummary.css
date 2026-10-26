@@ -1,0 +1,64 @@
+.week-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: 5.5em 1fr 5.5em;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.week-row.clickable { cursor: pointer; }
+.week-row.clickable:hover .week-label,
+.week-row.clickable:focus-visible .week-label {
+  text-decoration: underline;
+}
+
+.week-row.today .week-label {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.week-label {
+  font-size: 0.85em;
+}
+
+.week-total {
+  font-size: 0.8em;
+  text-align: right;
+}
+
+.week-bar {
+  display: flex;
+  height: 0.9em;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--surface-alt);
+}
+
+.seg.good { background: var(--good); }
+.seg.neutral { background: var(--neutral); }
+.seg.bad { background: var(--bad); }
+.seg.empty { background: transparent; }
+
+.week-legend {
+  display: flex;
+  gap: 1em;
+  font-size: 0.8em;
+  margin-top: 0.5em;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  margin-right: 0.35em;
+  vertical-align: middle;
+}
+.dot.good { background: var(--good); }
+.dot.neutral { background: var(--neutral); }
+.dot.bad { background: var(--bad); }

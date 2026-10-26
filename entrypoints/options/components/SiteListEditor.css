@@ -1,0 +1,41 @@
+.site-list-editor h3 {
+  margin-bottom: 0.25em;
+}
+
+.add-row {
+  display: flex;
+  gap: 0.5em;
+  margin: 0.75em 0;
+}
+.add-row input {
+  flex: 1;
+}
+
+.error {
+  color: var(--bad);
+  font-size: 0.85em;
+  margin-bottom: 0.5em;
+}
+
+.site-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.site-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-alt);
+  border-radius: 6px;
+  padding: 0.4em 0.7em;
+}
+
+.site-list li.empty {
+  background: none;
+  padding: 0.4em 0;
+}

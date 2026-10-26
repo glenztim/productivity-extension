@@ -1,0 +1,31 @@
+.blocked {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2em;
+}
+
+.blocked .card {
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding: 2em;
+}
+
+.blocked h1 {
+  font-size: 1.4em;
+}
+
+.countdown {
+  font-size: 1.3em;
+}
+
+.cancel-row {
+  display: flex;
+  gap: 0.5em;
+}
+.cancel-row input {
+  flex: 1;
+}

@@ -1,0 +1,78 @@
+.popup {
+  width: 300px;
+  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.popup header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popup header h1 {
+  font-size: 1.1em;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  font-weight: 500;
+}
+button.link:hover {
+  text-decoration: underline;
+}
+
+.stats-row {
+  display: flex;
+  gap: 0.75em;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+.stat strong {
+  font-size: 1.2em;
+}
+
+.stat strong.ticking {
+  font-variant-numeric: tabular-nums;
+}
+
+.elapsed {
+  font-size: 0.8em;
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.action-with-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.action-with-input button {
+  flex: 1;
+}
+.action-with-input input[type='number'] {
+  width: 4.5em;
+}
+.action-with-input input[type='text'] {
+  flex: 1;
+}

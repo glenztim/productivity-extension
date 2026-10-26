@@ -1,0 +1,99 @@
+.month-calendar,
+.day-view {
+  /* Diverging 5-step scale (validated: node scripts/validate_palette.js from the
+     dataviz skill — CVD ΔE and normal-vision floor both pass on every adjacent
+     pair in light and dark). Text on each cell uses a fixed ink, never the fill,
+     so the sub-3:1 contrast on some fills doesn't affect legibility. */
+  --cell-bad: #e34948;
+  --cell-poor: #f3a7a6;
+  --cell-neutral: #f0efec;
+  --cell-good: #86b6ef;
+  --cell-excellent: #184f95;
+  --cell-none: var(--bg);
+  --cell-ink-dark: #14161a;
+  --cell-ink-light: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .month-calendar,
+  .day-view {
+    --cell-bad: #e66767;
+    --cell-poor: #95504f;
+    --cell-neutral: #383835;
+    --cell-good: #3987e5;
+    --cell-excellent: #184f95;
+  }
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  margin-bottom: 0.75em;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.month-weekdays span {
+  text-align: center;
+  font-size: 0.75em;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: var(--cell-ink-dark);
+}
+
+.day-cell.out-of-month {
+  opacity: 0.35;
+}
+
+.day-cell.clickable { cursor: pointer; }
+.day-cell.clickable:hover,
+.day-cell.clickable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.bucket-excellent { background: var(--cell-excellent); color: var(--cell-ink-light); }
+.bucket-good { background: var(--cell-good); color: var(--cell-ink-dark); }
+.bucket-neutral { background: var(--cell-neutral); color: var(--cell-ink-dark); }
+.bucket-poor { background: var(--cell-poor); color: var(--cell-ink-dark); }
+.bucket-bad { background: var(--cell-bad); color: var(--cell-ink-light); }
+.bucket-none {
+  background: var(--cell-none);
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+}
+
+.month-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em 1.25em;
+  font-size: 0.8em;
+  margin-top: 0.75em;
+}
+
+.month-legend .dot {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 3px;
+  margin-right: 0.35em;
+  vertical-align: middle;
+}
+.month-legend .dot.bucket-none {
+  border: 1px dashed var(--border);
+}

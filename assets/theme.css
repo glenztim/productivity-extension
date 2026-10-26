@@ -1,0 +1,122 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Gelasio:ital,wght@0,400..700;1,400..700&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Jost:ital,wght@0,100..900;1,100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+  color-scheme: light dark;
+  --bg: hsl(50, 60%, 96%);
+  --surface: #D0D0C8;
+  --surface-alt: #F7F3DE;
+  --border: #C7C7BD;
+  --text: #172A3A;
+  --text-muted: #456990;
+  --accent: #D1603D;
+  --accent-strong: #C6522F;
+  --good: #3ecf6a;
+  --bad: #f2555a;
+  --neutral: #8b93a3;
+  --warning: #f2b155;
+
+  /* Font Families */
+  --font-sans: "Jost", system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-serif: "Gelasio", "Cormorant Garamond", "EB Garamond", Georgia, Cambria, "Times New Roman", Times, serif;
+  
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-alt: #eef0f4;
+    --border: #dde1e8;
+    --text: #1a1d23;
+    --text-muted: #5c6270;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1, h2, h3, p {
+  margin: 0;
+}
+
+h1, h2, h3, .font-serif {
+  font-family: var(--font-serif);
+  font-weight: 500; /* Serif display fonts often look best regular or slightly stylized */
+}
+
+h2 {
+  font-weight: 600;
+}
+
+button {
+  font-family: var(--font-sans);
+  font-size: 0.95em;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 0.6em 1em;
+  background: var(--surface-alt);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+button.primary:hover {
+  background: var(--accent-strong);
+}
+button.danger {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: white;
+}
+
+input[type='text'],
+input[type='number'] {
+  font-family: var(--font-sans);
+  font-size: 0.95em;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.5em 0.7em;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1em;
+}
+
+.muted {
+  color: var(--text-muted);
+}
