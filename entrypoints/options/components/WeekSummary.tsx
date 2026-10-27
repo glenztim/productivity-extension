@@ -3,7 +3,15 @@ import { lastNDays, localDateKey, WEEKDAY_LABELS } from '@/lib/dateUtils';
 import { formatMinutes } from '@/lib/format';
 import './WeekSummary.css';
 
-export default function WeekSummary({ stats, onSelectDay }: { stats: StatsSource; onSelectDay: (dateKey: string) => void }) {
+export default function WeekSummary({
+  stats,
+  selectedKey,
+  onSelectDay,
+}: {
+  stats: StatsSource;
+  selectedKey: string;
+  onSelectDay: (dateKey: string) => void;
+}) {
   const days = lastNDays(7);
 
   return (
@@ -19,7 +27,8 @@ export default function WeekSummary({ stats, onSelectDay }: { stats: StatsSource
 
         return (
           <div
-            className={`week-row clickable${isToday ? ' today' : ''}`}
+            className={`week-row clickable${isToday ? ' today' : ''}${key === selectedKey ? ' selected' : ''}`}
+            aria-pressed={key === selectedKey}
             key={key}
             role="button"
             tabIndex={0}

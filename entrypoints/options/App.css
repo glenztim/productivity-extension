@@ -1,5 +1,5 @@
 .app {
-  max-width: 880px;
+  max-width: 1040px;
   margin: 0 auto;
   padding: 2em 1.5em 4em;
   display: flex;
@@ -19,18 +19,6 @@
 }
 
 .app header nav button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
-.sub-tabs {
-  display: flex;
-  gap: 0.5em;
-  margin-bottom: -0.75em;
-}
-
-.sub-tabs button.active {
   background: var(--accent);
   border-color: var(--accent);
   color: white;

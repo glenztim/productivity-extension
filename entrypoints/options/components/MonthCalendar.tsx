@@ -12,7 +12,15 @@ const MONTH_LABELS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-export default function MonthCalendar({ stats, onSelectDay }: { stats: StatsSource; onSelectDay: (dateKey: string) => void }) {
+export default function MonthCalendar({
+  stats,
+  selectedKey,
+  onSelectDay,
+}: {
+  stats: StatsSource;
+  selectedKey: string;
+  onSelectDay: (dateKey: string) => void;
+}) {
   const config = useStorageItem(settings);
   const goalSeconds = (config?.dailyGoodTargetMinutes ?? DEFAULT_DAILY_TARGET_MINUTES) * 60;
   const now = new Date();
@@ -69,7 +77,7 @@ Bad: ${formatMinutes(day.badSeconds)}`
             return (
               <div
                 key={cell.dateKey}
-                className={`day-cell bucket-${level}${cell.inMonth ? '' : ' out-of-month'}${selectable ? ' clickable' : ''}`}
+                className={`day-cell bucket-${level}${cell.inMonth ? '' : ' out-of-month'}${selectable ? ' clickable' : ''}${cell.dateKey === selectedKey ? ' selected' : ''}`}
                 title={title}
                 {...(selectable && {
                   role: 'button',

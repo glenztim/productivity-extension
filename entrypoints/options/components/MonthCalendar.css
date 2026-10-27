@@ -1,5 +1,4 @@
-.month-calendar,
-.day-view {
+.month-calendar {
   /* Sequential scale from neutral grey to strong blue/green by goal progress. No red:
      bad time never lowers a day's color. Each cell has a fixed ink picked for contrast
      against its own fill (>= 4.5:1 in light and dark). */
@@ -17,8 +16,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .month-calendar,
-  .day-view {
+  .month-calendar {
     --cell-started: #3a3a37;
     --cell-building: #36506f;
     --cell-strong: #3f77b5;
@@ -68,6 +66,10 @@
 }
 
 .day-cell.clickable { cursor: pointer; }
+.day-cell.selected {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
 .day-cell.clickable:hover,
 .day-cell.clickable:focus-visible {
   outline: 2px solid var(--accent);

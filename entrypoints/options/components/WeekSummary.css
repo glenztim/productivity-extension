@@ -17,6 +17,13 @@
   text-decoration: underline;
 }
 
+.week-row.selected {
+  background: var(--surface-alt);
+  box-shadow: 0 0 0 4px var(--surface-alt);
+  border-radius: 6px;
+}
+.week-row.selected .week-label { font-weight: 700; }
+
 .week-row.today .week-label {
   font-weight: 700;
   color: var(--accent);
