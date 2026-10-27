@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getDayHours, getDayTotals, type StatsSource } from './dayStats';
-import { computeDayScore } from './score';
+import { dayProgress } from './score';
 
 const src = (partial: Partial<StatsSource>): StatsSource => ({ hourly: {}, legacy: {}, ...partial });
 
@@ -20,7 +20,7 @@ describe('legacy fallback', () => {
 
   it('returns undefined when neither source has the day', () => {
     expect(getDayTotals(legacyOnly, '2025-01-02')).toBeUndefined();
-    expect(computeDayScore(getDayTotals(legacyOnly, '2025-01-02'))).toBeNull();
+    expect(dayProgress(getDayTotals(legacyOnly, '2025-01-02'), 3600)).toBeNull();
   });
 });
 
@@ -46,7 +46,7 @@ describe('hourly data', () => {
     expect(hours[3]).toEqual({ goodSeconds: 0, badSeconds: 0, neutralSeconds: 0 });
   });
 
-  it('feeds computeDayScore through the summed totals', () => {
-    expect(computeDayScore(getDayTotals(s, '2025-01-01'))).toBeCloseTo((1800 - 900) / 3300);
+  it('feeds dayProgress through the summed totals', () => {
+    expect(dayProgress(getDayTotals(s, '2025-01-01'), 3600)).toBeCloseTo(0.5);
   });
 });

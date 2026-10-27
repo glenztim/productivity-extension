@@ -1,20 +1,11 @@
 import { getDayHours, getDayTotals, type StatsSource } from '@/lib/dayStats';
 import { localDateKey, parseDateKey, shiftDateKey } from '@/lib/dateUtils';
-import { bucketScore, computeDayScore, type ScoreBucket } from '@/lib/score';
+import { dayProgress, progressLevel, PROGRESS_LABELS } from '@/lib/score';
 import { formatMinutes } from '@/lib/format';
 import { DEFAULT_DAILY_TARGET_MINUTES, poolBalanceSeconds, settings } from '@/lib/storage';
 import { useStorageItem } from '@/lib/useStorageItem';
 import { useNow } from '@/lib/useNow';
 import './DayView.css';
-
-const BUCKET_LABELS: Record<ScoreBucket, string> = {
-  excellent: 'Excellent',
-  good: 'Good',
-  neutral: 'Mixed',
-  poor: 'Poor',
-  bad: 'Bad',
-  none: 'No data',
-};
 
 const RING_RADIUS = 52;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -38,12 +29,12 @@ export default function DayView({ stats, dateKey, onChange }: Props) {
 
   const totals = getDayTotals(stats, key);
   const hours = getDayHours(stats, key);
-  const score = computeDayScore(totals);
-  const bucket = bucketScore(score);
   const hasData = !!totals && totals.goodSeconds + totals.badSeconds + totals.neutralSeconds > 0;
 
   const targetSeconds = (config?.dailyGoodTargetMinutes ?? DEFAULT_DAILY_TARGET_MINUTES) * 60;
-  const progress = Math.min(1, (totals?.goodSeconds ?? 0) / targetSeconds);
+  const rawProgress = dayProgress(totals, targetSeconds) ?? 0;
+  const level = progressLevel(dayProgress(totals, targetSeconds));
+  const progress = Math.min(1, rawProgress);
 
   const go = (next: string) => onChange(next >= todayKey ? null : next);
 
@@ -87,10 +78,10 @@ export default function DayView({ stats, dateKey, onChange }: Props) {
               <div className="day-number"><span className="muted"><i className="dot neutral" /> Neutral</span><strong>{formatMinutes(totals.neutralSeconds)}</strong></div>
               <div className="day-number"><span className="muted"><i className="dot bad" /> Bad</span><strong>{formatMinutes(totals.badSeconds)}</strong></div>
               <div className="day-number">
-                <span className="muted">Day score</span>
+                <span className="muted">Goal progress</span>
                 <strong>
-                  <span className={`score-pill bucket-${bucket}`}>{BUCKET_LABELS[bucket]}</span>
-                  {score !== null && <span className="score-value"> {score > 0 ? '+' : ''}{Math.round(score * 100)}</span>}
+                  <span className={`score-pill bucket-${level}`}>{level === 'none' ? 'No data' : PROGRESS_LABELS[level]}</span>
+                  <span className="score-value"> {Math.round(rawProgress * 100)}%</span>
                 </strong>
               </div>
               {isToday && (

@@ -1,27 +1,34 @@
 .month-calendar,
 .day-view {
-  /* Diverging 5-step scale (validated: node scripts/validate_palette.js from the
-     dataviz skill — CVD ΔE and normal-vision floor both pass on every adjacent
-     pair in light and dark). Text on each cell uses a fixed ink, never the fill,
-     so the sub-3:1 contrast on some fills doesn't affect legibility. */
-  --cell-bad: #e34948;
-  --cell-poor: #f3a7a6;
-  --cell-neutral: #f0efec;
-  --cell-good: #86b6ef;
-  --cell-excellent: #184f95;
+  /* Sequential scale from neutral grey to strong blue/green by goal progress. No red:
+     bad time never lowers a day's color. Each cell has a fixed ink picked for contrast
+     against its own fill (>= 4.5:1 in light and dark). */
+  --cell-started: #e4e3df;
+  --cell-building: #bcd3ee;
+  --cell-strong: #7aaee6;
+  --cell-reached: #2f6fbf;
+  --cell-beyond: #17795f;
+  --ink-started: #14161a;
+  --ink-building: #14161a;
+  --ink-strong: #14161a;
+  --ink-reached: #ffffff;
+  --ink-beyond: #ffffff;
   --cell-none: var(--bg);
-  --cell-ink-dark: #14161a;
-  --cell-ink-light: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   .month-calendar,
   .day-view {
-    --cell-bad: #e66767;
-    --cell-poor: #95504f;
-    --cell-neutral: #383835;
-    --cell-good: #3987e5;
-    --cell-excellent: #184f95;
+    --cell-started: #3a3a37;
+    --cell-building: #36506f;
+    --cell-strong: #3f77b5;
+    --cell-reached: #5b9be6;
+    --cell-beyond: #3ecf9a;
+    --ink-started: #f0efec;
+    --ink-building: #ffffff;
+    --ink-strong: #ffffff;
+    --ink-reached: #14161a;
+    --ink-beyond: #14161a;
   }
 }
 
@@ -53,7 +60,7 @@
   border-radius: 6px;
   font-size: 0.8em;
   font-weight: 600;
-  color: var(--cell-ink-dark);
+  color: var(--text);
 }
 
 .day-cell.out-of-month {
@@ -67,11 +74,11 @@
   outline-offset: 1px;
 }
 
-.bucket-excellent { background: var(--cell-excellent); color: var(--cell-ink-light); }
-.bucket-good { background: var(--cell-good); color: var(--cell-ink-dark); }
-.bucket-neutral { background: var(--cell-neutral); color: var(--cell-ink-dark); }
-.bucket-poor { background: var(--cell-poor); color: var(--cell-ink-dark); }
-.bucket-bad { background: var(--cell-bad); color: var(--cell-ink-light); }
+.bucket-started { background: var(--cell-started); color: var(--ink-started); }
+.bucket-building { background: var(--cell-building); color: var(--ink-building); }
+.bucket-strong { background: var(--cell-strong); color: var(--ink-strong); }
+.bucket-reached { background: var(--cell-reached); color: var(--ink-reached); }
+.bucket-beyond { background: var(--cell-beyond); color: var(--ink-beyond); }
 .bucket-none {
   background: var(--cell-none);
   color: var(--text-muted);

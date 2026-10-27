@@ -39,7 +39,7 @@ export function generateMockDailyStats(weeks = 5, endTimestamp = Date.now()): Da
     const isOffDay = !isWeekend && rand() < 0.07;
     if (isOffDay && i !== 0) continue;
 
-    const goodHours = isWeekend ? between(0.3, 2) : between(2, 4.5) + progress * 1.2;
+    const goodHours = isWeekend ? between(0.3, 2) : between(2, 4.5) + progress * 1.8;
     const badHours = isWeekend ? between(1, 3) : between(0.4, 2.2) * (1.15 - progress * 0.4);
     const neutralHours = between(0.5, 1.8);
 

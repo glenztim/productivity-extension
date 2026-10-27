@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { activeMode, poolBalanceSeconds, settings, checkpoint } from '@/lib/storage';
+import { activeMode, poolBalanceSeconds, settings, checkpoint, DEFAULT_DAILY_TARGET_MINUTES } from '@/lib/storage';
 import { useStorageItem } from '@/lib/useStorageItem';
 import { useDailyStats } from '@/lib/useDailyStats';
 import { getDayTotals } from '@/lib/dayStats';
@@ -7,6 +7,7 @@ import { useNow } from '@/lib/useNow';
 import { localDateKey } from '@/lib/dateUtils';
 import { formatMinutes, formatClock, formatCountdown } from '@/lib/format';
 import { interpolatePool, interpolateGoodSecondsToday } from '@/lib/liveStats';
+import { progressLevel, PROGRESS_LABELS } from '@/lib/score';
 import { sendMessage } from '@/lib/messages';
 import './App.css';
 
@@ -28,6 +29,10 @@ export default function App() {
   const displayedPool = mode && cp && config ? interpolatePool(pool ?? 0, mode, cp, config, now) : pool ?? 0;
   const displayedGoodToday = cp ? interpolateGoodSecondsToday(goodSecondsToday, cp, now) : goodSecondsToday;
 
+  const goalSeconds = (config?.dailyGoodTargetMinutes ?? DEFAULT_DAILY_TARGET_MINUTES) * 60;
+  const progress = displayedGoodToday / goalSeconds;
+  const level = displayedGoodToday > 0 || today ? progressLevel(progress) : 'none';
+
   const openDashboard = () => browser.runtime.openOptionsPage();
 
   return (
@@ -47,6 +52,9 @@ export default function App() {
         <div className="stat card">
           <span className="muted">Good time today</span>
           <strong className="ticking">{formatClock(displayedGoodToday)}</strong>
+          <span className="muted">
+            {level === 'none' ? 'No data yet' : `${Math.round(progress * 100)}% · ${PROGRESS_LABELS[level]}`}
+          </span>
         </div>
       </div>
 
