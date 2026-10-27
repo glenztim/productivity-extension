@@ -3,6 +3,7 @@ import SiteListEditor from './SiteListEditor';
 import RatioPicker from './RatioPicker';
 import SessionDurationSettings from './SessionDurationSettings';
 import DailyTargetSetting from './DailyTargetSetting';
+import TabLimitEditor from './TabLimitEditor';
 
 export default function SettingsView() {
   return (
@@ -23,6 +24,11 @@ export default function SettingsView() {
           description="Time spent here during a session (or during a hard block) banks pool minutes."
           item={productivityList}
         />
+      </section>
+
+      <section className="card">
+        <h2>Tab limits</h2>
+        <TabLimitEditor />
       </section>
 
       <section className="card">

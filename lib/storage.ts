@@ -87,3 +87,13 @@ export type HourlyStatsMap = Record<string, Record<number, DayStats>>;
 export const hourlyStats = storage.defineItem<HourlyStatsMap>('local:hourlyStats', {
   fallback: {},
 });
+
+export interface TabLimitEntry {
+  id: string;
+  pattern: string;
+  maxTabs: number;
+}
+
+export const tabLimits = storage.defineItem<TabLimitEntry[]>('local:tabLimits', {
+  fallback: [],
+});

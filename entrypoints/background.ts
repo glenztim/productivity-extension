@@ -1,10 +1,12 @@
 import { recomputeCurrentActivity, handleAlarm } from '@/lib/accounting';
 import { registerNavigationBlocking } from '@/lib/blocking';
 import { registerMessageHandlers } from '@/lib/messages';
+import { registerTabLimits } from '@/lib/tabLimits';
 
 export default defineBackground(() => {
   registerNavigationBlocking();
   registerMessageHandlers();
+  registerTabLimits();
 
   browser.alarms.onAlarm.addListener((alarm) => {
     handleAlarm(alarm.name);

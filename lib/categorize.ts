@@ -19,7 +19,7 @@ export function normalizePattern(input: string): string | null {
   return hostname;
 }
 
-function matchesPattern(hostname: string, pattern: string): boolean {
+export function matchesPattern(hostname: string, pattern: string): boolean {
   return hostname === pattern || hostname.endsWith('.' + pattern);
 }
 
