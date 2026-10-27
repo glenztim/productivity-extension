@@ -53,7 +53,7 @@ export default function App() {
           <span className="muted">Good time today</span>
           <strong className="ticking">{formatClock(displayedGoodToday)}</strong>
           <span className="muted">
-            {level === 'none' ? 'No data yet' : `${Math.round(progress * 100)}% · ${PROGRESS_LABELS[level]}`}
+            {level === 'none' ? 'No data yet' : `${Math.round(progress * 100)}% Â· ${PROGRESS_LABELS[level]}`}
           </span>
         </div>
       </div>
