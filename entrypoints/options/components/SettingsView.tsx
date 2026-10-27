@@ -4,10 +4,16 @@ import RatioPicker from './RatioPicker';
 import SessionDurationSettings from './SessionDurationSettings';
 import DailyTargetSetting from './DailyTargetSetting';
 import TabLimitEditor from './TabLimitEditor';
+import UserNameSetting from './UserNameSetting';
 
 export default function SettingsView() {
   return (
     <>
+      <section className="card">
+        <h2>Profile</h2>
+        <UserNameSetting />
+      </section>
+
       <section className="card">
         <h2>Blocklist</h2>
         <SiteListEditor

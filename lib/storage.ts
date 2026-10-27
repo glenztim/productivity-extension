@@ -97,3 +97,7 @@ export interface TabLimitEntry {
 export const tabLimits = storage.defineItem<TabLimitEntry[]>('local:tabLimits', {
   fallback: [],
 });
+
+export const userName = storage.defineItem<string>('local:userName', {
+  fallback: '',
+});
