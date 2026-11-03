@@ -88,6 +88,32 @@ export const hourlyStats = storage.defineItem<HourlyStatsMap>('local:hourlyStats
   fallback: {},
 });
 
+/** Names of the per-day counters. Add a name here (and to DAY_EVENT_NAMES) to introduce a counter. */
+export const DAY_EVENT_NAMES = [
+  'goalReached',
+  'sessionsCompleted',
+  'unlocksUsed',
+  'tabsAutoClosed',
+  'checklistDone',
+  'xpEarned',
+] as const;
+
+export type DayEventName = (typeof DAY_EVENT_NAMES)[number];
+
+/** Numbers only, so nothing identifying can end up here. A missing counter means 0. */
+export type DayEvents = Partial<Record<DayEventName, number>>;
+
+/**
+ * Per-day event counters: 'YYYY-MM-DD' (local) -> counters. One map, like hourlyStats. Every counter
+ * is optional, so new counters can be added to DayEventName without a migration: old days simply
+ * read as 0 for them. Written only by the background via lib/dayEvents.
+ */
+export type DayEventsMap = Record<string, DayEvents>;
+
+export const dayEvents = storage.defineItem<DayEventsMap>('local:dayEvents', {
+  fallback: {},
+});
+
 export interface TabLimitEntry {
   id: string;
   pattern: string;
