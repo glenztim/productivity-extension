@@ -42,7 +42,7 @@ export default function TabLimitEditor() {
 
   return (
     <div className="site-list-editor">
-      <p className="muted">Once a site has this many tabs open, any further tab opened on it is closed automatically.</p>
+      <p className="muted">Once a site has this many tabs open, any further tab opened on it is closed automatically. Pinned tabs are neither counted nor closed.</p>
 
       <div className="add-row">
         <input
