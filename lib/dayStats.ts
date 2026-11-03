@@ -1,9 +1,10 @@
-import type { DailyStatsMap, DayStats, HourlyStatsMap } from './storage';
+import { DAY_EVENT_NAMES, type DailyStatsMap, type DayEventName, type DayEventsMap, type DayStats, type HourlyStatsMap } from './storage';
 
 /** Everything the UI needs to read tracked time: hourly data is authoritative, legacy day totals are the fallback. */
 export interface StatsSource {
   hourly: HourlyStatsMap;
   legacy: DailyStatsMap;
+  events: DayEventsMap;
 }
 
 const emptyHour = (): DayStats => ({ goodSeconds: 0, badSeconds: 0, neutralSeconds: 0 });
@@ -27,4 +28,12 @@ export function getDayTotals(src: StatsSource, dateKey: string): DayStats | unde
     }),
     emptyHour(),
   );
+}
+
+/** Every counter for a day, with 0 for anything not recorded (including days with no record at all). */
+export function getDayEvents(src: StatsSource, dateKey: string): Record<DayEventName, number> {
+  const day = src.events[dateKey];
+  const out = {} as Record<DayEventName, number>;
+  for (const name of DAY_EVENT_NAMES) out[name] = day?.[name] ?? 0;
+  return out;
 }

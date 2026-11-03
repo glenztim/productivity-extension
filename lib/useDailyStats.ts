@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { dailyStats, hourlyStats } from './storage';
+import { dailyStats, dayEvents, hourlyStats } from './storage';
 import type { StatsSource } from './dayStats';
 import { useStorageItem } from './useStorageItem';
 import { USE_MOCK_DATA, generateMockStats } from './mockData';
@@ -8,7 +8,8 @@ import { USE_MOCK_DATA, generateMockStats } from './mockData';
 export function useDailyStats(): StatsSource | undefined {
   const hourly = useStorageItem(hourlyStats);
   const legacy = useStorageItem(dailyStats);
+  const events = useStorageItem(dayEvents);
   const mock = useMemo(() => (USE_MOCK_DATA ? generateMockStats() : undefined), []);
-  const real = useMemo(() => (hourly && legacy ? { hourly, legacy } : undefined), [hourly, legacy]);
+  const real = useMemo(() => (hourly && legacy && events ? { hourly, legacy, events } : undefined), [hourly, legacy, events]);
   return USE_MOCK_DATA ? mock : real;
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { getDayHours, getDayTotals, type StatsSource } from './dayStats';
+import { getDayEvents, getDayHours, getDayTotals, type StatsSource } from './dayStats';
 import { dayProgress } from './score';
 
-const src = (partial: Partial<StatsSource>): StatsSource => ({ hourly: {}, legacy: {}, ...partial });
+const src = (partial: Partial<StatsSource>): StatsSource => ({ hourly: {}, legacy: {}, events: {}, ...partial });
 
 describe('legacy fallback', () => {
   const legacyOnly = src({ legacy: { '2025-01-01': { goodSeconds: 3600, badSeconds: 600, neutralSeconds: 0 } } });
@@ -48,5 +48,19 @@ describe('hourly data', () => {
 
   it('feeds dayProgress through the summed totals', () => {
     expect(dayProgress(getDayTotals(s, '2025-01-01'), 3600)).toBeCloseTo(0.5);
+  });
+});
+
+describe('getDayEvents', () => {
+  const zeros = { goalReached: 0, sessionsCompleted: 0, unlocksUsed: 0, tabsAutoClosed: 0, checklistDone: 0, xpEarned: 0 };
+  const s = src({ events: { '2025-01-01': { goalReached: 1, xpEarned: 40 } } });
+
+  it('returns zeros for a day with no record', () => {
+    expect(getDayEvents(s, '2025-01-02')).toEqual(zeros);
+    expect(getDayEvents(src({}), '2025-01-01')).toEqual(zeros);
+  });
+
+  it('fills counters that were never recorded with 0', () => {
+    expect(getDayEvents(s, '2025-01-01')).toEqual({ ...zeros, goalReached: 1, xpEarned: 40 });
   });
 });

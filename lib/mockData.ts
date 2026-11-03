@@ -1,6 +1,6 @@
 import { localDateKey } from './dateUtils';
 import type { StatsSource } from './dayStats';
-import type { DailyStatsMap, DayStats, HourlyStatsMap } from './storage';
+import { DEFAULT_DAILY_TARGET_MINUTES, type DailyStatsMap, type DayEventsMap, type DayStats, type HourlyStatsMap } from './storage';
 
 /** Flip to `true` to make the dashboard and popup show generated sample data instead of real stats. */
 export const USE_MOCK_DATA = true;
@@ -68,6 +68,40 @@ function spread(seconds: number, hours: number[], lastHour: number, rand: () => 
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
+/**
+ * Sample event counters for the most recent days that have mock totals. Seeded separately from the
+ * stats so adding events never changes the generated hours. `goalReached` follows the default goal,
+ * and a counter that would be 0 is left out, like real data where untouched counters are absent.
+ */
+export function generateMockEvents(legacy: DailyStatsMap, endTimestamp = Date.now(), days = MOCK_HOURLY_DAYS): DayEventsMap {
+  const rand = seededRandom(99);
+  const upTo = (max: number) => Math.floor(rand() * (max + 1));
+  const events: DayEventsMap = {};
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(endTimestamp);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    const key = localDateKey(d.getTime());
+    const totals = legacy[key];
+    if (!totals) continue;
+
+    const reached = totals.goodSeconds >= DEFAULT_DAILY_TARGET_MINUTES * 60;
+    const sessions = upTo(4);
+    const day: DayEventsMap[string] = {};
+    if (reached) day.goalReached = 1;
+    if (sessions > 0) day.sessionsCompleted = sessions;
+    const unlocks = upTo(3);
+    if (unlocks > 0) day.unlocksUsed = unlocks;
+    const closed = upTo(6);
+    if (closed > 0) day.tabsAutoClosed = closed;
+    if (rand() < 0.5) day.checklistDone = 1;
+    day.xpEarned = Math.round(totals.goodSeconds / 60) + (reached ? 50 : 0);
+    events[key] = day;
+  }
+  return events;
+}
+
 /** Daily mock totals plus plausible hour-by-hour detail for the most recent days (today only up to the current hour). */
 export function generateMockStats(weeks = 5, endTimestamp = Date.now()): StatsSource {
   const legacy = generateMockDailyStats(weeks, endTimestamp);
@@ -98,5 +132,5 @@ export function generateMockStats(weeks = 5, endTimestamp = Date.now()): StatsSo
     }
     hourly[key] = day;
   }
-  return { hourly, legacy };
+  return { hourly, legacy, events: generateMockEvents(legacy, endTimestamp) };
 }

@@ -67,7 +67,7 @@ async function recordGoalReached(hourly: HourlyStatsMap, dateKeys: string[]): Pr
     const config = await settings.getValue();
     const goalSeconds = (config.dailyGoodTargetMinutes ?? DEFAULT_DAILY_TARGET_MINUTES) * 60;
     for (const dateKey of pending) {
-      const progress = dayProgress(getDayTotals({ hourly, legacy: {} }, dateKey), goalSeconds);
+      const progress = dayProgress(getDayTotals({ hourly, legacy: {}, events: {} }, dateKey), goalSeconds);
       if (progress !== null && progress >= LEVEL_REACHED_FROM) await recordEventLocked(dateKey, 'goalReached');
     }
   } catch (err) {
