@@ -6,7 +6,7 @@ export default defineConfig({
   manifestVersion: 3,
   browser: 'firefox',
   manifest: {
-    permissions: ['storage', 'tabs', 'alarms', 'webNavigation'],
+    permissions: ['storage', 'tabs', 'alarms', 'webNavigation', 'notifications'],
     host_permissions: ['<all_urls>'],
     browser_specific_settings: {
       gecko: {

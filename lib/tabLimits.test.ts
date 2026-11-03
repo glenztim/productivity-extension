@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { TAB_LIMIT_GRACE_MS, enforceTabLimit, resetTabLimitState, startTabLimitGrace } from './tabLimits';
-import { tabLimits, type TabLimitEntry } from './storage';
+import { dayEvents, tabLimits, type TabLimitEntry } from './storage';
 
 const limit = (pattern: string, maxTabs: number, id = pattern): TabLimitEntry => ({ id, pattern, maxTabs });
 
@@ -21,9 +21,16 @@ async function isOpen(id: number): Promise<boolean> {
   return (await fakeBrowser.tabs.query({})).some((t) => t.id === id);
 }
 
+// fake-browser's tabs.remove deletes the tab and then rejects (it looks up a window by the tab's id),
+// where the real API resolves. Wrap it so removal behaves like the real thing.
+const fakeRemove = fakeBrowser.tabs.remove.bind(fakeBrowser.tabs);
+
 beforeEach(() => {
   fakeBrowser.reset();
   resetTabLimitState();
+  vi.spyOn(fakeBrowser.tabs, 'remove').mockImplementation((async (id: number) => {
+    await fakeRemove(id).catch(() => {});
+  }) as typeof fakeBrowser.tabs.remove);
 });
 
 describe('closing', () => {
@@ -161,6 +168,82 @@ describe('startup grace period', () => {
     await tabLimits.setValue([limit('youtube.com', 1)]);
     await openChecked('https://youtube.com/a');
     expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(false);
+  });
+});
+
+describe('feedback and counting', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  const today = '2025-06-10';
+  const freezeToday = () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2025, 5, 10, 9, 0, 0));
+  };
+
+  it('records tabsAutoClosed once per closed tab, on the day it happened', async () => {
+    freezeToday();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    await openChecked('https://youtube.com/b');
+    await openChecked('https://youtube.com/c');
+    await openChecked('https://example.com');
+    expect((await dayEvents.getValue())[today]).toEqual({ tabsAutoClosed: 2 });
+  });
+
+  it('records one per tab when several are closed at once', async () => {
+    freezeToday();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    const ids = await Promise.all([open('https://youtube.com/b'), open('https://youtube.com/c'), open('https://youtube.com/d')]);
+    await Promise.all(ids.map((id) => enforceTabLimit(id)));
+    expect((await dayEvents.getValue())[today]?.tabsAutoClosed).toBe(3);
+  });
+
+  it('records nothing when no tab is closed', async () => {
+    freezeToday();
+    await tabLimits.setValue([limit('youtube.com', 2)]);
+    await openChecked('https://youtube.com/a');
+    await openChecked('https://youtube.com/b');
+    expect(await dayEvents.getValue()).toEqual({});
+    expect(fakeBrowser.notifications.getAllCreateOptions()).toEqual({});
+  });
+
+  it('records and notifies nothing when the tab could not be closed', async () => {
+    freezeToday();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    vi.spyOn(fakeBrowser.tabs, 'remove').mockRejectedValue(new Error('No tab with id'));
+    await openChecked('https://youtube.com/b');
+    expect(await dayEvents.getValue()).toEqual({});
+    expect(fakeBrowser.notifications.getAllCreateOptions()).toEqual({});
+  });
+
+  it('shows one notification per limit naming the limit and nothing else', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1, 'yt')]);
+    await openChecked('https://youtube.com/a');
+    await openChecked('https://youtube.com/secret-path?q=private');
+    await openChecked('https://youtube.com/another');
+
+    const shown = fakeBrowser.notifications.getAllCreateOptions();
+    expect(Object.keys(shown)).toEqual(['tab-limit-yt']);
+    const note = shown['tab-limit-yt']!;
+    expect(note.title).toBe('Tab limit reached');
+    expect(note.message).toBe('youtube.com is limited to 1 tab. The new tab was closed.');
+    expect(JSON.stringify(note)).not.toMatch(/secret|private/);
+  });
+
+  it('still closes and records when the notification fails', async () => {
+    freezeToday();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(fakeBrowser.notifications, 'create').mockRejectedValue(new Error('denied'));
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    const b = await openChecked('https://youtube.com/b');
+    expect(await isOpen(b)).toBe(false);
+    expect((await dayEvents.getValue())[today]?.tabsAutoClosed).toBe(1);
   });
 });
 

@@ -1,6 +1,8 @@
 import { tabLimitGraceUntil, tabLimits, type TabLimitEntry } from './storage';
 import { matchesPattern, safeHostname } from './categorize';
 import { serialize } from './mutex';
+import { recordEventLocked } from './dayEvents';
+import { localDateKey } from './dateUtils';
 
 /** After browser start, tabs are counted but not closed for this long, so session restore keeps all its tabs. */
 export const TAB_LIMIT_GRACE_MS = 5_000;
@@ -19,6 +21,20 @@ function pickLimit(limits: TabLimitEntry[], hostname: string): TabLimitEntry | u
     if (matchesPattern(hostname, l.pattern) && (!best || l.pattern.length > best.pattern.length)) best = l;
   }
   return best;
+}
+
+/** One notification per limit (fixed id), so a burst of closed tabs replaces it instead of piling up. Shows only the user's own entry. */
+async function notifyClosed(limit: TabLimitEntry): Promise<void> {
+  try {
+    await browser.notifications.create(`tab-limit-${limit.id}`, {
+      type: 'basic',
+      iconUrl: browser.runtime.getURL('/icon/128.png'),
+      title: 'Tab limit reached',
+      message: `${limit.pattern} is limited to ${limit.maxTabs} ${limit.maxTabs === 1 ? 'tab' : 'tabs'}. The new tab was closed.`,
+    });
+  } catch (err) {
+    console.error('Failed to show tab limit notification', err);
+  }
 }
 
 /** Caller must hold the accounting lock (`serialize`), so concurrent checks see each other's closures. */
@@ -59,6 +75,14 @@ async function enforceLocked(tabId: number): Promise<void> {
     return; // already gone
   }
   counted.delete(tabId);
+
+  // Only reached when the tab was actually closed, so each closed tab is recorded exactly once.
+  try {
+    await recordEventLocked(localDateKey(Date.now()), 'tabsAutoClosed');
+  } catch (err) {
+    console.error('Failed to record tabsAutoClosed', err);
+  }
+  await notifyClosed(limit);
 }
 
 /** Checks one tab against the limits. Never rejects, so a failure cannot break the event listeners. */
