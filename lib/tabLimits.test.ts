@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { enforceTabLimit, resetTabLimitState } from './tabLimits';
+import { TAB_LIMIT_GRACE_MS, enforceTabLimit, resetTabLimitState, startTabLimitGrace } from './tabLimits';
 import { tabLimits, type TabLimitEntry } from './storage';
 
 const limit = (pattern: string, maxTabs: number, id = pattern): TabLimitEntry => ({ id, pattern, maxTabs });
@@ -120,6 +120,47 @@ describe('when the URL arrives', () => {
   it('ignores tabs that no longer exist', async () => {
     await tabLimits.setValue([limit('youtube.com', 1)]);
     await expect(enforceTabLimit(9999)).resolves.toBeUndefined();
+  });
+});
+
+describe('startup grace period', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('leaves tabs open during the grace period and enforces again once it is over', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2025, 5, 10, 9, 0, 0));
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await startTabLimitGrace();
+
+    await openChecked('https://youtube.com/a');
+    const restored = await openChecked('https://youtube.com/b');
+    expect(await isOpen(restored)).toBe(true);
+
+    vi.setSystemTime(Date.now() + TAB_LIMIT_GRACE_MS + 1);
+    const late = await openChecked('https://youtube.com/c');
+    expect(await isOpen(late)).toBe(false);
+  });
+
+  it('does not close a tab that was counted during the grace period when it navigates afterwards', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2025, 5, 10, 9, 0, 0));
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await startTabLimitGrace();
+    await openChecked('https://youtube.com/a');
+    const restored = await openChecked('https://youtube.com/b');
+
+    vi.setSystemTime(Date.now() + TAB_LIMIT_GRACE_MS + 1);
+    await fakeBrowser.tabs.update(restored, { url: 'https://youtube.com/c' });
+    await enforceTabLimit(restored);
+    expect(await isOpen(restored)).toBe(true);
+  });
+
+  it('does not apply when no startup happened', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(false);
   });
 });
 

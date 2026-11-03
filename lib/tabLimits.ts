@@ -1,6 +1,9 @@
-import { tabLimits, type TabLimitEntry } from './storage';
+import { tabLimitGraceUntil, tabLimits, type TabLimitEntry } from './storage';
 import { matchesPattern, safeHostname } from './categorize';
 import { serialize } from './mutex';
+
+/** After browser start, tabs are counted but not closed for this long, so session restore keeps all its tabs. */
+export const TAB_LIMIT_GRACE_MS = 5_000;
 
 /**
  * tabId -> id of the limit the tab currently counts toward. Ids only, never hostnames. It lets a
@@ -40,6 +43,7 @@ async function enforceLocked(tabId: number): Promise<void> {
   }
   if (counted.get(tabId) === limit.id) return;
   counted.set(tabId, limit.id);
+  if (Date.now() < (await tabLimitGraceUntil.getValue())) return;
 
   const tabs = await browser.tabs.query({});
   const others = tabs.filter((t) => {
@@ -64,6 +68,11 @@ export function enforceTabLimit(tabId: number): Promise<void> {
   });
 }
 
+/** Starts the post-startup grace period. Stored (not in memory) because the background can restart at any time. */
+export function startTabLimitGrace(): Promise<void> {
+  return serialize(() => tabLimitGraceUntil.setValue(Date.now() + TAB_LIMIT_GRACE_MS));
+}
+
 /** Clears the in-memory tab bookkeeping (tests only). */
 export function resetTabLimitState(): void {
   counted.clear();
@@ -80,5 +89,9 @@ export function registerTabLimits(): void {
 
   browser.tabs.onRemoved.addListener((tabId) => {
     counted.delete(tabId);
+  });
+
+  browser.runtime.onStartup.addListener(() => {
+    startTabLimitGrace().catch((err) => console.error('Failed to start tab limit grace period', err));
   });
 }

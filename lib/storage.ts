@@ -124,6 +124,11 @@ export const tabLimits = storage.defineItem<TabLimitEntry[]>('local:tabLimits', 
   fallback: [],
 });
 
+/** Epoch ms until which tab limits are not enforced; set at browser start so a restored session is left alone. */
+export const tabLimitGraceUntil = storage.defineItem<number>('local:tabLimitGraceUntil', {
+  fallback: 0,
+});
+
 export const userName = storage.defineItem<string>('local:userName', {
   fallback: '',
 });

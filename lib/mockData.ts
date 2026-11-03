@@ -3,7 +3,7 @@ import type { StatsSource } from './dayStats';
 import { DEFAULT_DAILY_TARGET_MINUTES, type DailyStatsMap, type DayEventsMap, type DayStats, type HourlyStatsMap } from './storage';
 
 /** Flip to `true` to make the dashboard and popup show generated sample data instead of real stats. */
-export const USE_MOCK_DATA = true;
+export const USE_MOCK_DATA = false;
 
 /** Small deterministic PRNG (mulberry32) so the mock data looks the same on every reload. */
 function seededRandom(seed: number): () => number {
