@@ -2,7 +2,7 @@
   "name": "productivity-boost-extension",
   "description": "A productivity-boosting browser extension",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
