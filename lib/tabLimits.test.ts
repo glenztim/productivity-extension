@@ -400,7 +400,7 @@ describe('feedback and counting', () => {
     const shown = fakeBrowser.notifications.getAllCreateOptions();
     expect(Object.keys(shown)).toEqual(['tab-limit-yt']);
     const note = shown['tab-limit-yt']!;
-    expect(note.title).toBe('Tab limit reached');
+    expect(note.title).toBe('Focused Time: Tab limit reached');
     expect(note.message).toBe('youtube.com is limited to 1 tab. The new tab was closed.');
     expect(JSON.stringify(note)).not.toMatch(/secret|private/);
   });

@@ -73,7 +73,7 @@ async function notifyClosed(limit: TabLimitEntry): Promise<void> {
     await browser.notifications.create(`tab-limit-${limit.id}`, {
       type: 'basic',
       iconUrl: browser.runtime.getURL('/icon/128.png'),
-      title: 'Tab limit reached',
+      title: 'Focused Time: Tab limit reached',
       message: `${limit.pattern} is limited to ${limit.maxTabs} ${limit.maxTabs === 1 ? 'tab' : 'tabs'}. The new tab was closed.`,
     });
   } catch (err) {
