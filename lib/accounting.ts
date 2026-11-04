@@ -184,3 +184,20 @@ export async function handleAlarm(name: string): Promise<void> {
     await recomputeCurrentActivity();
   }
 }
+
+/**
+ * Makes sure the end-of-mode alarm exists for the stored mode. The mode itself persists in storage,
+ * but alarms are browser state: Firefox does not keep them across a browser restart, so a session or
+ * hard block could otherwise never end. A mode whose end has already passed is ended right away.
+ * Run when the background starts; creating an alarm that already exists is skipped.
+ */
+export async function restoreModeAlarms(): Promise<void> {
+  const mode = await activeMode.getValue();
+  if (mode.type === 'free') return;
+  const name = mode.type === 'session' ? 'sessionEnd' : 'hardBlockEnd';
+  if (mode.endsAt <= Date.now()) {
+    await handleAlarm(name);
+    return;
+  }
+  if (!(await browser.alarms.get(name))) await browser.alarms.create(name, { when: mode.endsAt });
+}

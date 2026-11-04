@@ -1,4 +1,4 @@
-import { recomputeCurrentActivity, handleAlarm } from '@/lib/accounting';
+import { recomputeCurrentActivity, handleAlarm, restoreModeAlarms } from '@/lib/accounting';
 import { registerNavigationBlocking } from '@/lib/blocking';
 import { registerMessageHandlers } from '@/lib/messages';
 import { registerTabLimits } from '@/lib/tabLimits';
@@ -34,5 +34,8 @@ export default defineBackground(() => {
     recomputeCurrentActivity();
   });
 
-  recomputeCurrentActivity();
+  // Alarms do not survive a Firefox restart: re-create the mode's end alarm before first evaluating activity.
+  restoreModeAlarms()
+    .catch((err) => console.error('Failed to restore mode alarms', err))
+    .finally(() => recomputeCurrentActivity());
 });
