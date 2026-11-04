@@ -140,3 +140,12 @@ export const userName = storage.defineItem<string>('local:userName', {
 export const tabLimitCounted = storage.defineItem<Record<string, string>>('session:tabLimitCounted', {
   fallback: {},
 });
+
+/**
+ * Set (in session storage) once this browser session has been seen by the background. Session
+ * storage is empty exactly when the browser, or the extension, has just started, so a missing
+ * marker means "a start happened" without relying on the onStartup event or its ordering.
+ */
+export const tabLimitSessionStarted = storage.defineItem<boolean>('session:tabLimitSessionStarted', {
+  fallback: false,
+});

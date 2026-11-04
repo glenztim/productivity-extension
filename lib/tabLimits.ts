@@ -1,4 +1,10 @@
-import { tabLimitCounted, tabLimitGraceUntil, tabLimits, type TabLimitEntry } from './storage';
+import {
+  tabLimitCounted,
+  tabLimitGraceUntil,
+  tabLimitSessionStarted,
+  tabLimits,
+  type TabLimitEntry,
+} from './storage';
 import { matchesPattern, safeHostname } from './categorize';
 import { serialize } from './mutex';
 import { recordEventLocked } from './dayEvents';
@@ -135,12 +141,34 @@ export function startTabLimitGrace(): Promise<void> {
   return serialize(() => tabLimitGraceUntil.setValue(Date.now() + TAB_LIMIT_GRACE_MS));
 }
 
+/**
+ * Starts the grace period if this browser session has not been seen yet (no session marker), then sets
+ * the marker. Called as the background script starts, so it does not depend on whether, or in what
+ * order, onStartup and the session-restore tab events arrive. Later wake-ups from suspension find the
+ * marker and do nothing. Also runs after an extension install, enable, reload or update, where a short
+ * grace period is harmless. Without storage.session there is no marker, so only onStartup starts grace.
+ * Never rejects.
+ */
+export function ensureTabLimitSession(): Promise<void> {
+  return serialize(async () => {
+    if (await tabLimitSessionStarted.getValue()) return;
+    await tabLimitGraceUntil.setValue(Date.now() + TAB_LIMIT_GRACE_MS);
+    await tabLimitSessionStarted.setValue(true);
+  }).catch((err) => {
+    console.warn('Could not start the tab limit grace period from the session marker', err);
+  });
+}
+
 /** Drops the module-memory fallback, as a background restart would (tests only). Session storage is untouched. */
 export function resetTabLimitState(): void {
   memoryCounted = {};
 }
 
 export function registerTabLimits(): void {
+  // Queue the session check before any event can be handled: this runs while the script starts, and
+  // events are only dispatched afterwards, so every check below runs after the grace period is set.
+  ensureTabLimitSession();
+
   browser.tabs.onCreated.addListener((tab) => {
     if (tab.id !== undefined) enforceTabLimit(tab.id);
   });

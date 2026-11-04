@@ -1,8 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { TAB_LIMIT_GRACE_MS, enforceTabLimit, registerTabLimits, resetTabLimitState, startTabLimitGrace } from './tabLimits';
-import { dayEvents, tabLimitCounted, tabLimits, type TabLimitEntry } from './storage';
+import {
+  TAB_LIMIT_GRACE_MS,
+  enforceTabLimit,
+  ensureTabLimitSession,
+  registerTabLimits, resetTabLimitState,
+  startTabLimitGrace,
+} from './tabLimits';
+import { dayEvents, tabLimitCounted, tabLimitSessionStarted, tabLimits, type TabLimitEntry } from './storage';
 import { serialize } from './mutex';
+import type { Browser } from 'wxt/browser';
 
 const limit = (pattern: string, maxTabs: number, id = pattern): TabLimitEntry => ({ id, pattern, maxTabs });
 
@@ -167,6 +174,83 @@ describe('startup grace period', () => {
 
   it('does not apply when no startup happened', async () => {
     await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(false);
+  });
+});
+
+describe('grace period without onStartup', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  const freeze = () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2025, 5, 10, 9, 0, 0));
+  };
+  const settle = async () => {
+    await new Promise((r) => setTimeout(r, 0));
+    await serialize(async () => {});
+  };
+
+  it('starts when the background starts and no session marker exists', async () => {
+    freeze();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await ensureTabLimitSession();
+
+    await openChecked('https://youtube.com/a');
+    const restored = await openChecked('https://youtube.com/b');
+    expect(await isOpen(restored)).toBe(true);
+
+    vi.setSystemTime(Date.now() + TAB_LIMIT_GRACE_MS + 1);
+    expect(await isOpen(await openChecked('https://youtube.com/c'))).toBe(false);
+  });
+
+  it('is not restarted when the background merely wakes up again', async () => {
+    freeze();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await ensureTabLimitSession();
+    vi.setSystemTime(Date.now() + TAB_LIMIT_GRACE_MS + 1);
+
+    await ensureTabLimitSession(); // suspension and wake-up: the marker is still in session storage
+    await openChecked('https://youtube.com/a');
+    expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(false);
+  });
+
+  it('covers session-restore tab events that arrive before any onStartup event', async () => {
+    freeze();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    registerTabLimits(); // as the background script does while starting
+
+    const a = await open('https://youtube.com/a');
+    const b = await open('https://youtube.com/b');
+    await fakeBrowser.tabs.onCreated.trigger({ id: a } as Browser.tabs.Tab);
+    await fakeBrowser.tabs.onCreated.trigger({ id: b } as Browser.tabs.Tab);
+    await settle();
+    expect(await isOpen(a)).toBe(true);
+    expect(await isOpen(b)).toBe(true);
+  });
+
+  it('still starts the grace period on onStartup as an additional trigger', async () => {
+    freeze();
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    registerTabLimits();
+    await settle();
+    vi.setSystemTime(Date.now() + TAB_LIMIT_GRACE_MS + 1); // the first grace is over
+
+    await fakeBrowser.runtime.onStartup.trigger();
+    await settle();
+    await openChecked('https://youtube.com/a');
+    expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(true);
+  });
+
+  it('does nothing and does not throw when storage.session is unavailable', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(tabLimitSessionStarted, 'getValue').mockRejectedValue(new Error('storage.session is not available'));
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await expect(ensureTabLimitSession()).resolves.toBeUndefined();
+
     await openChecked('https://youtube.com/a');
     expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(false);
   });
