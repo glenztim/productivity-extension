@@ -8,7 +8,7 @@ import { localDateKey } from '@/lib/dateUtils';
 import { formatMinutes, formatClock, formatCountdown } from '@/lib/format';
 import { interpolatePool, interpolateGoodSecondsToday } from '@/lib/liveStats';
 import { progressLevel, PROGRESS_LABELS } from '@/lib/score';
-import { sendMessage } from '@/lib/messages';
+import { isValidDurationMinutes, sendMessage } from '@/lib/messages';
 import './App.css';
 
 export default function App() {
@@ -93,7 +93,11 @@ function FreeModeControls({
       </button>
 
       <div className="action-with-input">
-        <button className="primary" onClick={() => sendMessage({ type: 'START_SESSION', kind: 'long', durationMinutes: longMinutes })}>
+        <button
+          className="primary"
+          disabled={!isValidDurationMinutes(longMinutes)}
+          onClick={() => sendMessage({ type: 'START_SESSION', kind: 'long', durationMinutes: longMinutes })}
+        >
           Start long session
         </button>
         <input
@@ -106,7 +110,11 @@ function FreeModeControls({
       </div>
 
       <div className="action-with-input">
-        <button className="danger" onClick={() => sendMessage({ type: 'START_HARD_BLOCK', durationMinutes: hardMinutes })}>
+        <button
+          className="danger"
+          disabled={!isValidDurationMinutes(hardMinutes)}
+          onClick={() => sendMessage({ type: 'START_HARD_BLOCK', durationMinutes: hardMinutes })}
+        >
           Start hard block
         </button>
         <input

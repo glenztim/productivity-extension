@@ -1,6 +1,6 @@
 import { recomputeCurrentActivity, handleAlarm, restoreModeAlarms } from '@/lib/accounting';
 import { registerNavigationBlocking } from '@/lib/blocking';
-import { registerMessageHandlers } from '@/lib/messages';
+import { registerMessageHandlers } from '@/lib/messageHandler';
 import { registerTabLimits } from '@/lib/tabLimits';
 
 export default defineBackground(() => {
