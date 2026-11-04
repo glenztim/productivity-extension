@@ -149,3 +149,12 @@ export const tabLimitCounted = storage.defineItem<Record<string, string>>('sessi
 export const tabLimitSessionStarted = storage.defineItem<boolean>('session:tabLimitSessionStarted', {
   fallback: false,
 });
+
+/**
+ * Version of the shape of everything under `local:`. 0 means "never stamped" (a fresh install, or
+ * data written before versioning existed, which already has the version-1 shape). Written only by
+ * lib/migrations, which runs when the background starts.
+ */
+export const schemaVersion = storage.defineItem<number>('local:schemaVersion', {
+  fallback: 0,
+});
