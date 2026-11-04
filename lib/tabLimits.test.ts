@@ -256,6 +256,91 @@ describe('grace period without onStartup', () => {
   });
 });
 
+describe('last tab in a window', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  /** A new window holding exactly one tab with this URL. */
+  async function soloWindowTab(url: string): Promise<number> {
+    const win = await fakeBrowser.windows.create({});
+    const tab = await fakeBrowser.tabs.create({ url, windowId: win!.id });
+    await enforceTabLimit(tab.id!);
+    return tab.id!;
+  }
+
+  it('is sent to the extension page instead of being removed, so the window stays open', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1, 'yt-limit')]);
+    await openChecked('https://youtube.com/a');
+    const solo = await soloWindowTab('https://youtube.com/b');
+
+    expect(await isOpen(solo)).toBe(true);
+    const url = (await fakeBrowser.tabs.get(solo)).url!;
+    expect(url).toContain('/limit-reached.html?limit=yt-limit');
+    expect(fakeBrowser.tabs.remove).not.toHaveBeenCalled();
+  });
+
+  it('puts only the limit id in the URL, never the hostname or path', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1, 'yt-limit')]);
+    await openChecked('https://youtube.com/a');
+    const solo = await soloWindowTab('https://youtube.com/watch?v=secret');
+    const url = (await fakeBrowser.tabs.get(solo)).url!;
+    expect(url).not.toMatch(/youtube\.com|secret/);
+  });
+
+  it('still counts as an auto-closed tab, once, without a "closed" notification', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2025, 5, 10, 9, 0, 0));
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    const solo = await soloWindowTab('https://youtube.com/b');
+    await enforceTabLimit(solo); // the redirect's own navigation event
+    expect((await dayEvents.getValue())['2025-06-10']).toEqual({ tabsAutoClosed: 1 });
+    expect(fakeBrowser.notifications.getAllCreateOptions()).toEqual({});
+  });
+
+  it('leaves the redirected page alone on its follow-up navigation event', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    const solo = await soloWindowTab('https://youtube.com/b');
+    await enforceTabLimit(solo);
+    expect(await isOpen(solo)).toBe(true);
+    expect(await tabLimitCounted.getValue()).not.toHaveProperty(String(solo));
+  });
+
+  it('is removed as before when the window has other tabs', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    const win = await fakeBrowser.windows.create({});
+    await fakeBrowser.tabs.create({ url: 'https://youtube.com/a', windowId: win!.id });
+    await fakeBrowser.tabs.create({ url: 'https://example.com', windowId: win!.id });
+    const extra = await fakeBrowser.tabs.create({ url: 'https://youtube.com/b', windowId: win!.id });
+    await enforceTabLimit(extra.id!);
+    expect(await isOpen(extra.id!)).toBe(false);
+  });
+
+  it('is removed as before when only a pinned tab shares the window', async () => {
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    const win = await fakeBrowser.windows.create({});
+    await fakeBrowser.tabs.create({ url: 'https://example.com', pinned: true, windowId: win!.id });
+    const extra = await fakeBrowser.tabs.create({ url: 'https://youtube.com/b', windowId: win!.id });
+    await enforceTabLimit(extra.id!);
+    expect(await isOpen(extra.id!)).toBe(false);
+  });
+
+  it('records and notifies nothing when the redirect fails', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2025, 5, 10, 9, 0, 0));
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    await openChecked('https://youtube.com/a');
+    vi.spyOn(fakeBrowser.tabs, 'update').mockRejectedValue(new Error('No tab with id'));
+    await soloWindowTab('https://youtube.com/b');
+    expect(await dayEvents.getValue()).toEqual({});
+    expect(fakeBrowser.notifications.getAllCreateOptions()).toEqual({});
+  });
+});
+
 describe('feedback and counting', () => {
   afterEach(() => {
     vi.useRealTimers();

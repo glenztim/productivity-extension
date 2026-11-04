@@ -81,6 +81,19 @@ async function notifyClosed(limit: TabLimitEntry): Promise<void> {
   }
 }
 
+function limitReachedUrl(limit: TabLimitEntry): string {
+  return `${browser.runtime.getURL('/limit-reached.html')}?limit=${encodeURIComponent(limit.id)}`;
+}
+
+/** Only called once a tab was actually closed or emptied, so each one is recorded exactly once. */
+async function recordAutoClosed(): Promise<void> {
+  try {
+    await recordEventLocked(localDateKey(Date.now()), 'tabsAutoClosed');
+  } catch (err) {
+    console.error('Failed to record tabsAutoClosed', err);
+  }
+}
+
 /** Caller must hold the accounting lock (`serialize`), so concurrent checks see each other's closures. */
 async function enforceLocked(tabId: number): Promise<void> {
   // Re-read the tab: the event's snapshot may be stale by the time this check gets its turn.
@@ -113,19 +126,27 @@ async function enforceLocked(tabId: number): Promise<void> {
   });
   if (others.length < limit.maxTabs) return;
 
+  // Closing the last tab of a window would close the window (and possibly the browser). Navigate it
+  // to our own page instead; the URL carries only the limit's id.
+  const lastInWindow = tab.windowId !== undefined && (await browser.tabs.query({ windowId: tab.windowId })).length <= 1;
+  if (lastInWindow) {
+    try {
+      await browser.tabs.update(tabId, { url: limitReachedUrl(limit) });
+    } catch {
+      return; // already gone
+    }
+    await clearCounted(tabId);
+    await recordAutoClosed();
+    return;
+  }
+
   try {
     await browser.tabs.remove(tabId);
   } catch {
     return; // already gone
   }
   await clearCounted(tabId);
-
-  // Only reached when the tab was actually closed, so each closed tab is recorded exactly once.
-  try {
-    await recordEventLocked(localDateKey(Date.now()), 'tabsAutoClosed');
-  } catch (err) {
-    console.error('Failed to record tabsAutoClosed', err);
-  }
+  await recordAutoClosed();
   await notifyClosed(limit);
 }
 
