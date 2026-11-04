@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { activeMode, poolBalanceSeconds } from '@/lib/storage';
+import { activeMode, blocklist, poolBalanceSeconds } from '@/lib/storage';
 import { useStorageItem } from '@/lib/useStorageItem';
 import { useNow } from '@/lib/useNow';
 import { formatMinutes, formatCountdown } from '@/lib/format';
 import { sendMessage } from '@/lib/messages';
 import './App.css';
 
-function useQueryParams() {
-  const params = new URLSearchParams(location.search);
-  return { site: params.get('site') ?? '', reason: params.get('reason') ?? '' };
+/** The only thing in the URL is the id of the user's blocklist entry; the page looks up its pattern here. */
+function useBlockedEntryId(): string | null {
+  return new URLSearchParams(location.search).get('entry');
 }
 
 export default function App() {
-  const { site, reason } = useQueryParams();
+  const entryId = useBlockedEntryId();
+  const entries = useStorageItem(blocklist);
+  const site = entries?.find((e) => e.id === entryId)?.pattern ?? '';
   const mode = useStorageItem(activeMode);
   const pool = useStorageItem(poolBalanceSeconds);
   const now = useNow();
@@ -25,7 +27,7 @@ export default function App() {
       <div className="card">
         <h1>🚫 {site || 'This site'} is blocked</h1>
 
-        {reason === 'hardBlock' && mode?.type === 'hardBlock' ? (
+        {mode?.type === 'hardBlock' ? (
           <>
             <p className="muted">You started a hard block. It's fully off-limits until it ends.</p>
             <strong className="countdown">{formatCountdown(mode.endsAt - now)} remaining</strong>
