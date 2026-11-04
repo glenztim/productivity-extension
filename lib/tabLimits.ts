@@ -1,4 +1,4 @@
-import { tabLimitGraceUntil, tabLimits, type TabLimitEntry } from './storage';
+import { tabLimitCounted, tabLimitGraceUntil, tabLimits, type TabLimitEntry } from './storage';
 import { matchesPattern, safeHostname } from './categorize';
 import { serialize } from './mutex';
 import { recordEventLocked } from './dayEvents';
@@ -8,11 +8,49 @@ import { localDateKey } from './dateUtils';
 export const TAB_LIMIT_GRACE_MS = 5_000;
 
 /**
- * tabId -> id of the limit the tab currently counts toward. Ids only, never hostnames. It lets a
- * tab navigating within an already-counted site pass, so only tabs that *enter* a limited site can
- * be closed. In memory: after a background restart a tab is simply treated as entering again.
+ * Which limit each tab currently counts toward (see `tabLimitCounted`). It lets a tab navigating
+ * within an already-counted site pass, so only tabs that *enter* a limited site can be closed.
+ *
+ * Kept in storage.session because the background is an event page that Firefox suspends after
+ * ~30s idle; module state would be lost each time. If storage.session is unavailable or fails,
+ * this falls back to module memory, where a restart just makes tabs count as entering again.
  */
-const counted = new Map<number, string>();
+let memoryCounted: Record<string, string> = {};
+
+async function readCounted(): Promise<Record<string, string>> {
+  try {
+    return await tabLimitCounted.getValue();
+  } catch {
+    return memoryCounted;
+  }
+}
+
+async function writeCounted(next: Record<string, string>): Promise<void> {
+  try {
+    await tabLimitCounted.setValue(next);
+  } catch {
+    memoryCounted = next;
+  }
+}
+
+/** Caller must hold the accounting lock (`serialize`). */
+async function getCounted(tabId: number): Promise<string | undefined> {
+  return (await readCounted())[tabId];
+}
+
+/** Caller must hold the accounting lock (`serialize`). */
+async function setCounted(tabId: number, limitId: string): Promise<void> {
+  const map = await readCounted();
+  if (map[tabId] !== limitId) await writeCounted({ ...map, [tabId]: limitId });
+}
+
+/** Caller must hold the accounting lock (`serialize`). */
+async function clearCounted(tabId: number): Promise<void> {
+  const map = await readCounted();
+  if (!(tabId in map)) return;
+  const { [tabId]: _removed, ...rest } = map;
+  await writeCounted(rest);
+}
 
 /** The most specific (longest) limit pattern matching the hostname, so music.youtube.com beats youtube.com. */
 function pickLimit(limits: TabLimitEntry[], hostname: string): TabLimitEntry | undefined {
@@ -42,23 +80,23 @@ async function enforceLocked(tabId: number): Promise<void> {
   // Re-read the tab: the event's snapshot may be stale by the time this check gets its turn.
   const tab = await browser.tabs.get(tabId).catch(() => null);
   if (!tab) {
-    counted.delete(tabId);
+    await clearCounted(tabId);
     return;
   }
   const hostname = tab.url ? safeHostname(tab.url) : null;
   if (!hostname) {
     // Blank or non-web page: wait for a real URL.
-    counted.delete(tabId);
+    await clearCounted(tabId);
     return;
   }
 
   const limit = pickLimit(await tabLimits.getValue(), hostname);
   if (!limit || tab.pinned) {
-    counted.delete(tabId);
+    await clearCounted(tabId);
     return;
   }
-  if (counted.get(tabId) === limit.id) return;
-  counted.set(tabId, limit.id);
+  if ((await getCounted(tabId)) === limit.id) return;
+  await setCounted(tabId, limit.id);
   if (Date.now() < (await tabLimitGraceUntil.getValue())) return;
 
   const tabs = await browser.tabs.query({});
@@ -74,7 +112,7 @@ async function enforceLocked(tabId: number): Promise<void> {
   } catch {
     return; // already gone
   }
-  counted.delete(tabId);
+  await clearCounted(tabId);
 
   // Only reached when the tab was actually closed, so each closed tab is recorded exactly once.
   try {
@@ -97,9 +135,9 @@ export function startTabLimitGrace(): Promise<void> {
   return serialize(() => tabLimitGraceUntil.setValue(Date.now() + TAB_LIMIT_GRACE_MS));
 }
 
-/** Clears the in-memory tab bookkeeping (tests only). */
+/** Drops the module-memory fallback, as a background restart would (tests only). Session storage is untouched. */
 export function resetTabLimitState(): void {
-  counted.clear();
+  memoryCounted = {};
 }
 
 export function registerTabLimits(): void {
@@ -112,7 +150,7 @@ export function registerTabLimits(): void {
   });
 
   browser.tabs.onRemoved.addListener((tabId) => {
-    counted.delete(tabId);
+    serialize(() => clearCounted(tabId)).catch((err) => console.error('Failed to forget closed tab', err));
   });
 
   browser.runtime.onStartup.addListener(() => {

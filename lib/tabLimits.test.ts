@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { TAB_LIMIT_GRACE_MS, enforceTabLimit, resetTabLimitState, startTabLimitGrace } from './tabLimits';
-import { dayEvents, tabLimits, type TabLimitEntry } from './storage';
+import { TAB_LIMIT_GRACE_MS, enforceTabLimit, registerTabLimits, resetTabLimitState, startTabLimitGrace } from './tabLimits';
+import { dayEvents, tabLimitCounted, tabLimits, type TabLimitEntry } from './storage';
+import { serialize } from './mutex';
 
 const limit = (pattern: string, maxTabs: number, id = pattern): TabLimitEntry => ({ id, pattern, maxTabs });
 
@@ -258,5 +259,76 @@ describe('concurrency', () => {
     await Promise.all([enforceTabLimit(a), enforceTabLimit(b)]);
     const youtube = (await fakeBrowser.tabs.query({})).filter((t) => t.url?.includes('youtube.com'));
     expect(youtube).toHaveLength(3);
+  });
+});
+
+describe('counted-tab bookkeeping', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** Three youtube tabs with the limit then lowered to 1, so `first` is over the limit but already counted. */
+  async function overLimitSetup() {
+    await tabLimits.setValue([limit('youtube.com', 3)]);
+    const first = await openChecked('https://youtube.com/1');
+    await openChecked('https://youtube.com/2');
+    await openChecked('https://youtube.com/3');
+    await tabLimits.setValue([limit('youtube.com', 1)]);
+    return first;
+  }
+
+  it('survives a background restart: an already-counted tab still passes when it navigates within the site', async () => {
+    const first = await overLimitSetup();
+    resetTabLimitState(); // what a suspended-and-restarted background loses
+
+    await fakeBrowser.tabs.update(first, { url: 'https://youtube.com/other' });
+    await enforceTabLimit(first);
+    expect(await isOpen(first)).toBe(true);
+  });
+
+  it('keeps ids only: no hostname, pattern or path ends up in session storage', async () => {
+    await tabLimits.setValue([limit('youtube.com', 5, 'limit-1')]);
+    const id = await openChecked('https://youtube.com/watch?v=secret');
+    const stored = await tabLimitCounted.getValue();
+    expect(stored).toEqual({ [id]: 'limit-1' });
+    expect(JSON.stringify(await fakeBrowser.storage.session.get(null))).not.toMatch(/youtube|secret/);
+  });
+
+  it('forgets a tab when it is closed', async () => {
+    registerTabLimits();
+    await tabLimits.setValue([limit('youtube.com', 5)]);
+    const id = await openChecked('https://youtube.com/a');
+    expect(Object.keys(await tabLimitCounted.getValue())).toEqual([String(id)]);
+
+    await fakeBrowser.tabs.remove(id);
+    // fake-browser rejects remove() before it fires onRemoved, so fire it as the real browser would.
+    await fakeBrowser.tabs.onRemoved.trigger(id, { windowId: 1, isWindowClosing: false });
+    await serialize(async () => {});
+    expect(await tabLimitCounted.getValue()).toEqual({});
+  });
+
+  describe('when storage.session is unavailable', () => {
+    beforeEach(() => {
+      vi.spyOn(tabLimitCounted, 'getValue').mockRejectedValue(new Error('storage.session is not available'));
+      vi.spyOn(tabLimitCounted, 'setValue').mockRejectedValue(new Error('storage.session is not available'));
+    });
+
+    it('still enforces limits using module memory', async () => {
+      await tabLimits.setValue([limit('youtube.com', 1)]);
+      await openChecked('https://youtube.com/a');
+      expect(await isOpen(await openChecked('https://youtube.com/b'))).toBe(false);
+    });
+
+    it('still lets a counted tab navigate within its site, until the background restarts', async () => {
+      const first = await overLimitSetup();
+      await fakeBrowser.tabs.update(first, { url: 'https://youtube.com/other' });
+      await enforceTabLimit(first);
+      expect(await isOpen(first)).toBe(true);
+
+      resetTabLimitState(); // memory is lost on restart: the documented limitation of the fallback
+      await fakeBrowser.tabs.update(first, { url: 'https://youtube.com/again' });
+      await enforceTabLimit(first);
+      expect(await isOpen(first)).toBe(false);
+    });
   });
 });

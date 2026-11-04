@@ -131,3 +131,12 @@ export const tabLimitGraceUntil = storage.defineItem<number>('local:tabLimitGrac
 export const userName = storage.defineItem<string>('local:userName', {
   fallback: '',
 });
+
+/**
+ * tabId (as a string key) -> id of the tab limit that tab currently counts toward. Ids only, never
+ * hostnames. Session storage survives the background being suspended and restarted, but is cleared
+ * when the browser restarts (tab ids are not stable across that anyway).
+ */
+export const tabLimitCounted = storage.defineItem<Record<string, string>>('session:tabLimitCounted', {
+  fallback: {},
+});
