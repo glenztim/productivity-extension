@@ -12,7 +12,7 @@ async function setGoalMinutes(minutes: number | undefined) {
 }
 
 async function startTracking(timestamp: number, category: Category = 'good') {
-  await checkpoint.setValue({ timestamp, category, tabId: null, hostname: null });
+  await checkpoint.setValue({ timestamp, category, tabId: null });
 }
 
 const goodSecondsAt = (hour: number, seconds: number): HourlyStatsMap[string] => ({

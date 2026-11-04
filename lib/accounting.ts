@@ -130,19 +130,17 @@ export async function recomputeCurrentActivity(): Promise<void> {
 
     let category: Checkpoint['category'] = 'none';
     let tabId: number | null = null;
-    let hostname: string | null = null;
 
     const focused = await currentFocusedTab();
     if (focused) {
       const h = safeHostname(focused.url);
       if (h) {
-        hostname = h;
         category = await categorize(h);
         tabId = focused.tabId;
       }
     }
 
-    await checkpoint.setValue({ timestamp: now, category, tabId, hostname });
+    await checkpoint.setValue({ timestamp: now, category, tabId });
   });
   await scheduleAlarms();
 }

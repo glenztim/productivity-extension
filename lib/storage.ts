@@ -57,11 +57,10 @@ export interface Checkpoint {
   timestamp: number;
   category: Category;
   tabId: number | null;
-  hostname: string | null;
 }
 
 export const checkpoint = storage.defineItem<Checkpoint>('local:checkpoint', {
-  fallback: { timestamp: Date.now(), category: 'none', tabId: null, hostname: null },
+  fallback: { timestamp: Date.now(), category: 'none', tabId: null },
 });
 
 export interface DayStats {
