@@ -2,8 +2,12 @@ import { localDateKey } from './dateUtils';
 import type { StatsSource } from './dayStats';
 import { DEFAULT_DAILY_TARGET_MINUTES, type DailyStatsMap, type DayEventsMap, type DayStats, type HourlyStatsMap } from './storage';
 
-/** Flip to `true` to make the dashboard and popup show generated sample data instead of real stats. */
-export const USE_MOCK_DATA = false;
+/**
+ * Sample data instead of real stats in the dashboard and popup. Only possible under `wxt dev`, and
+ * off unless you opt in with `WXT_MOCK_DATA=true` (put it in a git-ignored `.env.local`). Builds and
+ * zips always get `false`, which also lets the bundler drop the generators.
+ */
+export const USE_MOCK_DATA: boolean = import.meta.env.COMMAND === 'serve' && import.meta.env.WXT_MOCK_DATA === 'true';
 
 /** Small deterministic PRNG (mulberry32) so the mock data looks the same on every reload. */
 function seededRandom(seed: number): () => number {
