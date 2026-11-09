@@ -23,16 +23,21 @@ the old naming where they never mentioned it; do not rename them.
 
 ## Architecture (verify against the code and correct this file if it has drifted)
 
-- Storage items are declared in `lib/storage.ts` (WXT `storage`, local area).
-  Daily category totals: `hourlyStats` (source of truth, hour buckets by local
-  time), `dailyStats` (legacy, read-only fallback). Per-day counters:
-  `dayEvents`. Also: settings, lists, pool balance, mode, checkpoint,
-  `schemaVersion`.
+- Storage items are declared in `lib/storage.ts` (WXT `storage`). Persistent data
+  is in the `local:` area. Daily category totals: `hourlyStats` (source of truth,
+  hour buckets by local time), `dailyStats` (legacy, read-only fallback). Per-day
+  counters: `dayEvents`. Also: settings, lists (`blocklist`, `productivityList`),
+  `tabLimits`, `userName`, pool balance, mode, checkpoint, `tabLimitGraceUntil`,
+  `schemaVersion`. Volatile bookkeeping lives in `session:` storage
+  (`tabLimitCounted`, `tabLimitSessionStarted`): it survives background
+  suspension but is cleared when the browser restarts or the add-on is reloaded.
 - **Every change to a stored shape needs a migration** in the migration runner
-  (it runs under the lock at background start). Bump `schemaVersion`.
-- All writes happen in the background and go through the shared mutex
-  (`lib/mutex.ts`). Never read-modify-write storage outside it. Use the `...Locked`
-  variants when already holding the lock, or you will deadlock.
+  (`lib/migrations.ts`, it runs under the lock at background start). Bump
+  `CURRENT_SCHEMA_VERSION` (stored as `local:schemaVersion`). Purely additive
+  changes (a new optional field, a new counter name) do not need one.
+- Background writes go through the shared mutex (`lib/mutex.ts`). Never
+  read-modify-write storage outside it. Use the `...Locked` variants (e.g.
+  `recordEventLocked`) when already holding the lock, or you will deadlock.
 - Time accounting: `lib/accounting.ts` (`flush`, `recomputeCurrentActivity`,
   heartbeat alarm). Intervals are split at local hour and day boundaries
   (`lib/dateUtils.ts`). Gaps over the threshold are dropped, not credited.
@@ -41,7 +46,14 @@ the old naming where they never mentioned it; do not rename them.
 - Popup, options, dashboard and content scripts never write storage directly.
   They send typed messages (`lib/messages.ts`) that the background validates and
   handles (`lib/messageHandler.ts`). Content scripts may send only the allowed
-  message types.
+  message types (today `RECORD_EVENT` and `GET_STATE`).
+  **Known exception (drift from this rule):** the options page writes the
+  user-edited items `settings`, `blocklist`, `productivityList`, `tabLimits` and
+  `userName` directly (`entrypoints/options/components/*`), outside the mutex and
+  without validation. The background only reads these items, never writes them, so
+  there is no lost-update race today; that changes the moment the background starts
+  writing any of them. New code should follow the message rule; moving these writes
+  behind messages is not done yet.
 - Reads go through selectors in `lib/dayStats.ts` (`getDayTotals`, `getDayHours`,
   `getDayEvents`) and `lib/score.ts` (goal progress and levels).
 - Tab limits: `lib/tabLimits.ts`. Alarms are re-created at background start.
@@ -57,7 +69,7 @@ the old naming where they never mentioned it; do not rename them.
 - [ ] Step 1: friction checks. After 15 min of active time on one blocklist
       domain, a soft-lock overlay appears on the page. Challenge ladder: hold a
       button, math, short text, long text. Needs a content script and host
-      access (decision pending: `<all_urls>` was removed in commit 88db102)
+      access (decision pending: `<all_urls>` was removed in commit d94a4b9)
 - [ ] Gamification: streaks, XP and levels, achievements, goals, projects,
       checklists, weekly review (plans and open questions are in the roadmap doc)
 
