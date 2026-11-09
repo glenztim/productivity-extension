@@ -1,5 +1,6 @@
 import { schemaVersion } from './storage';
 import { serialize } from './mutex';
+import { logError } from './logError';
 
 /**
  * Storage schema versioning. `local:schemaVersion` records which shape the data on disk has, and
@@ -74,7 +75,7 @@ async function migrateFrom(from: number, migrations: readonly Migration[], targe
       await m.run();
     } catch (err) {
       // Version stays at the last completed step, so the next start retries from here.
-      console.error(`Storage migration to schema ${m.to} failed`, err);
+      logError(`Storage migration to schema ${m.to} failed`, err);
       return { status: 'failed', version };
     }
     version = m.to;
@@ -95,7 +96,7 @@ async function migrateFrom(from: number, migrations: readonly Migration[], targe
  */
 export function runMigrations(migrations: readonly Migration[] = MIGRATIONS, target: number = CURRENT_SCHEMA_VERSION): Promise<MigrationResult> {
   return serialize(() => migrate(migrations, target)).catch((err) => {
-    console.error('Storage migration check failed', err);
+    logError('Storage migration check failed', err);
     return { status: 'failed' as const, version: null };
   });
 }

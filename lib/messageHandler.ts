@@ -4,6 +4,7 @@ import { flush, recomputeCurrentActivity } from './accounting';
 import { enforceBlockingAcrossAllTabs } from './blocking';
 import { recordEvent } from './dayEvents';
 import { localDateKey } from './dateUtils';
+import { logError } from './logError';
 import { parseMessage, type Message, type MessageType, type Reply } from './messages';
 
 type Sender = Browser.runtime.MessageSender;
@@ -38,7 +39,7 @@ export async function handleIncoming(raw: unknown, sender: Sender | undefined): 
     return await handleMessage(msg);
   } catch (err) {
     // Message type only: never the payload or sender, which could carry a page URL.
-    console.error(`Message ${msg.type} failed`, err);
+    logError(`Message ${msg.type} failed`, err);
     return { ok: false, error: 'failed' };
   }
 }

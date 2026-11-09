@@ -134,3 +134,22 @@ describe('what gets blocked', () => {
     expect(await tabUrl(id)).toBe(blockedPageUrl(entry('entry-1', 'reddit.com'))); // pool is 0
   });
 });
+
+describe('a tab that cannot be redirected', () => {
+  it('does not stop the remaining tabs from being redirected, and logs only the error name', async () => {
+    const first = await openTab('https://reddit.com/a');
+    const second = await openTab('https://reddit.com/b');
+    const realUpdate = fakeBrowser.tabs.update.bind(fakeBrowser.tabs);
+    vi.spyOn(fakeBrowser.tabs, 'update').mockImplementation(((id: number, props: object) => {
+      if (id === first) return Promise.reject(new TypeError(`Invalid tab ID: ${VISITED}`));
+      return realUpdate(id, props);
+    }) as never);
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await enforceBlockingAcrossAllTabs();
+
+    expect(new URL(await tabUrl(second)).pathname).toBe('/blocked.html');
+    expect(logged).toHaveBeenCalledWith('Failed to redirect a tab to the blocked page (TypeError)');
+    expect(JSON.stringify(logged.mock.calls)).not.toMatch(IDENTIFYING);
+  });
+});

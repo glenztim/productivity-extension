@@ -168,12 +168,12 @@ describe('unknown senders', () => {
 });
 
 describe('failures', () => {
-  it('answers { ok: false, error: "failed" } instead of rejecting, and logs the type only', async () => {
+  it('answers { ok: false, error: "failed" } instead of rejecting, and logs the type and error name only', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(activeMode, 'setValue').mockRejectedValue(new Error('disk full'));
     const reply = await handleIncoming({ type: 'START_HARD_BLOCK', durationMinutes: 60 }, extensionPage());
     expect(reply).toEqual({ ok: false, error: 'failed' });
-    expect(log.mock.calls[0]![0]).toBe('Message START_HARD_BLOCK failed');
+    expect(log.mock.calls).toEqual([['Message START_HARD_BLOCK failed (Error)']]);
   });
 });
 

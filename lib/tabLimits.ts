@@ -9,6 +9,7 @@ import { matchesPattern, safeHostname } from './categorize';
 import { serialize } from './mutex';
 import { recordEventLocked } from './dayEvents';
 import { localDateKey } from './dateUtils';
+import { logError, logWarn } from './logError';
 
 /** After browser start, tabs are counted but not closed for this long, so session restore keeps all its tabs. */
 export const TAB_LIMIT_GRACE_MS = 5_000;
@@ -77,7 +78,7 @@ async function notifyClosed(limit: TabLimitEntry): Promise<void> {
       message: `${limit.pattern} is limited to ${limit.maxTabs} ${limit.maxTabs === 1 ? 'tab' : 'tabs'}. The new tab was closed.`,
     });
   } catch (err) {
-    console.error('Failed to show tab limit notification', err);
+    logError('Failed to show tab limit notification', err);
   }
 }
 
@@ -90,7 +91,7 @@ async function recordAutoClosed(): Promise<void> {
   try {
     await recordEventLocked(localDateKey(Date.now()), 'tabsAutoClosed');
   } catch (err) {
-    console.error('Failed to record tabsAutoClosed', err);
+    logError('Failed to record tabsAutoClosed', err);
   }
 }
 
@@ -153,7 +154,7 @@ async function enforceLocked(tabId: number): Promise<void> {
 /** Checks one tab against the limits. Never rejects, so a failure cannot break the event listeners. */
 export function enforceTabLimit(tabId: number): Promise<void> {
   return serialize(() => enforceLocked(tabId)).catch((err) => {
-    console.error('Tab limit check failed', err);
+    logError('Tab limit check failed', err);
   });
 }
 
@@ -176,7 +177,7 @@ export function ensureTabLimitSession(): Promise<void> {
     await tabLimitGraceUntil.setValue(Date.now() + TAB_LIMIT_GRACE_MS);
     await tabLimitSessionStarted.setValue(true);
   }).catch((err) => {
-    console.warn('Could not start the tab limit grace period from the session marker', err);
+    logWarn('Could not start the tab limit grace period from the session marker', err);
   });
 }
 
@@ -199,10 +200,10 @@ export function registerTabLimits(): void {
   });
 
   browser.tabs.onRemoved.addListener((tabId) => {
-    serialize(() => clearCounted(tabId)).catch((err) => console.error('Failed to forget closed tab', err));
+    serialize(() => clearCounted(tabId)).catch((err) => logError('Failed to forget closed tab', err));
   });
 
   browser.runtime.onStartup.addListener(() => {
-    startTabLimitGrace().catch((err) => console.error('Failed to start tab limit grace period', err));
+    startTabLimitGrace().catch((err) => logError('Failed to start tab limit grace period', err));
   });
 }

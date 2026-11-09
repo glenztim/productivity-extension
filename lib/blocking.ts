@@ -1,5 +1,6 @@
 import { activeMode, poolBalanceSeconds, type SiteEntry } from './storage';
 import { findBlocklistEntry, safeHostname } from './categorize';
+import { logError } from './logError';
 
 export async function isBadSiteBlockingActive(): Promise<boolean> {
   const mode = await activeMode.getValue();
@@ -28,18 +29,28 @@ export async function enforceBlockingAcrossAllTabs(): Promise<void> {
     if (!tab.id || !tab.url) continue;
     const h = safeHostname(tab.url);
     const entry = h ? await findBlocklistEntry(h) : undefined;
-    if (entry) await redirectToBlocked(tab.id, entry);
+    if (!entry) continue;
+    try {
+      await redirectToBlocked(tab.id, entry);
+    } catch (err) {
+      // The tab can close between the query and the update. That must not stop the remaining tabs from being redirected.
+      logError('Failed to redirect a tab to the blocked page', err);
+    }
   }
 }
 
 export function registerNavigationBlocking(): void {
   browser.webNavigation.onBeforeNavigate.addListener(async ({ frameId, tabId, url }) => {
     if (frameId !== 0) return;
-    const h = safeHostname(url);
-    const entry = h ? await findBlocklistEntry(h) : undefined;
-    if (!entry) return;
-    if (await isBadSiteBlockingActive()) {
-      await redirectToBlocked(tabId, entry);
+    try {
+      const h = safeHostname(url);
+      const entry = h ? await findBlocklistEntry(h) : undefined;
+      if (!entry) return;
+      if (await isBadSiteBlockingActive()) {
+        await redirectToBlocked(tabId, entry);
+      }
+    } catch (err) {
+      logError('Failed to check a navigation against the blocklist', err);
     }
   });
 }

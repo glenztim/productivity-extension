@@ -17,6 +17,7 @@ import { splitByLocalHour } from './dateUtils';
 import { enforceBlockingAcrossAllTabs } from './blocking';
 import { updateBadge } from './badge';
 import { serialize } from './mutex';
+import { logError } from './logError';
 import { recordEventLocked } from './dayEvents';
 import { getDayTotals } from './dayStats';
 import { LEVEL_REACHED_FROM, dayProgress } from './score';
@@ -71,7 +72,7 @@ async function recordGoalReached(hourly: HourlyStatsMap, dateKeys: string[]): Pr
       if (progress !== null && progress >= LEVEL_REACHED_FROM) await recordEventLocked(dateKey, 'goalReached');
     }
   } catch (err) {
-    console.error('Failed to record goalReached', err);
+    logError('Failed to record goalReached', err);
   }
 }
 
