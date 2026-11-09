@@ -6,13 +6,13 @@ export default defineConfig({
   manifestVersion: 3,
   browser: 'firefox',
   zip: {
-    name: 'focus-pool',
+    name: 'focused-time',
     // Design sources are not needed to build the extension, so they stay out of the AMO source upload.
     excludeSources: ['design/**'],
   },
   manifest: {
-    name: 'Focus Pool',
-    description: 'Earn time on distracting sites by spending it on productive ones. Hard blocks and tab limits. All data stays on your device.',
+    name: 'Focused Time',
+    description: 'Earn your breaks, cap your tabs, and track your focus over time.',
     permissions: ['storage', 'tabs', 'alarms', 'webNavigation', 'notifications'],
     browser_specific_settings: {
       gecko: {

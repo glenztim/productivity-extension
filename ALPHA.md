@@ -1,4 +1,4 @@
-# Focus Pool: Firefox alpha
+# Focused Time: Firefox alpha
 
 Needs Firefox 140 or newer (`strict_min_version` in the manifest). Version, ID and name come from `package.json` and `wxt.config.ts`.
 
@@ -10,7 +10,7 @@ Needs Firefox 140 or newer (`strict_min_version` in the manifest). Version, ID a
 ```sh
 npm ci
 npm run build:firefox      # unpacked extension in .output/firefox-mv3/
-npm run zip:firefox        # .output/focus-pool-<version>-firefox.zip and ...-sources.zip
+npm run zip:firefox        # .output/focused-time-<version>-firefox.zip and ...-sources.zip
 npm run compile && npm test
 npx web-ext lint -s .output/firefox-mv3    # optional: Mozilla's own checks, offline
 ```
@@ -34,8 +34,8 @@ Release Firefox only installs signed add-ons permanently. "Unlisted" means Mozil
 
 1. Sign in at <https://addons.mozilla.org/developers/> with a Firefox account (create the developer profile when asked).
 2. **Submit a New Add-on**, then choose **On your own** (unlisted) as the distribution.
-3. Upload `.output/focus-pool-<version>-firefox.zip`. Wait for the automated validation. Errors must be fixed; the two innerHTML warnings above are expected.
-4. The bundle is minified, so AMO asks whether you need to submit source code. Answer **yes** and upload `.output/focus-pool-<version>-sources.zip`. In the notes for reviewers write:
+3. Upload `.output/focused-time-<version>-firefox.zip`. Wait for the automated validation. Errors must be fixed; the two innerHTML warnings above are expected.
+4. The bundle is minified, so AMO asks whether you need to submit source code. Answer **yes** and upload `.output/focused-time-<version>-sources.zip`. In the notes for reviewers write:
 
    > Build with Node 22 or newer: `npm ci` then `npm run zip:firefox`. The extension is written to `.output/firefox-mv3/`. No other tools or environment variables are needed.
 
@@ -49,7 +49,7 @@ Every upload needs a higher version than the previous one: `npm version 0.1.1 --
 Open `about:debugging` and click **Inspect** on the add-on for the console and the Storage tab.
 
 **Install and permissions**
-- [ ] `about:addons` lists "Focus Pool" at the expected version, and its Permissions tab shows no "access your data for all websites" (the `<all_urls>` host permission was removed).
+- [ ] `about:addons` lists "Focused Time" at the expected version, and its Permissions tab shows no "access your data for all websites" (the `<all_urls>` host permission was removed).
 - [ ] The popup opens, shows the pool and today's progress, and no sample data appears anywhere.
 
 **Messages from the pages to the background**

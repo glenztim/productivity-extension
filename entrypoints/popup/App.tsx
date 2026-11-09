@@ -38,7 +38,7 @@ export default function App() {
   return (
     <div className="popup">
       <header>
-        <h1>Focus Pool</h1>
+        <h1>Focused Time</h1>
         <button className="link" onClick={openDashboard}>
           Dashboard
         </button>

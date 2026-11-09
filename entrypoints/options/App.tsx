@@ -11,7 +11,7 @@ export default function App() {
   return (
     <div className="app">
       <header>
-        <h1>Focus Pool</h1>
+        <h1>Focused Time</h1>
         <nav>
           <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => setTab('dashboard')}>
             Dashboard

@@ -1,4 +1,4 @@
-# Focus Pool
+# Focused Time
 
 A browser extension (Firefox first) that turns time on productive sites into a pool of time you can spend on distracting ones, with hard blocks and per-site tab limits. Everything stays on your device: nothing is sent anywhere, and the only sites stored are the ones you type into your own lists.
 
@@ -26,7 +26,7 @@ npm ci
 npm run zip:firefox
 ```
 
-The extension is written to `.output/firefox-mv3/`, the upload to `.output/focus-pool-<version>-firefox.zip` and the source upload to `.output/focus-pool-<version>-sources.zip`. No other tools are needed. Building the sources zip on another machine gives byte-identical files.
+The extension is written to `.output/firefox-mv3/`, the upload to `.output/focused-time-<version>-firefox.zip` and the source upload to `.output/focused-time-<version>-sources.zip`. No other tools are needed. Building the sources zip on another machine gives byte-identical files.
 
 ## Trying the alpha
 

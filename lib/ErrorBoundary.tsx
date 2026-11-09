@@ -15,7 +15,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: { componentStack?: string | null }) {
-    console.error('Focus Pool crashed:', error, info.componentStack);
+    console.error('Focused Time crashed:', error, info.componentStack);
   }
 
   override render() {
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
             minWidth: '260px',
           }}
         >
-          <strong>Focus Pool crashed while rendering:</strong>
+          <strong>Focused Time crashed while rendering:</strong>
           <div style={{ marginTop: '0.5em' }}>{this.state.error.message}</div>
           <div style={{ opacity: 0.7, marginTop: '0.5em' }}>{this.state.error.stack}</div>
         </div>
