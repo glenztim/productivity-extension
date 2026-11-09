@@ -23,6 +23,10 @@ export default defineConfig({
           required: ['none'],
         },
       },
+      // Firefox for Android only understands data_collection_permissions from 142, so its minimum is higher than desktop's.
+      gecko_android: {
+        strict_min_version: '142.0',
+      },
     },
   },
 });
